@@ -1085,7 +1085,7 @@ JSSpec.StringEqualityMatcher = function(expected, actual) {
 };
 
 JSSpec.StringEqualityMatcher.prototype.matches = function() {
-	if(this.expected == this.actual) return true;
+	return this.expected == this.actual;
 };
 
 JSSpec.StringEqualityMatcher.prototype.explain = function() {
@@ -1498,7 +1498,7 @@ var targets = [Array.prototype, Date.prototype, Number.prototype, String.prototy
 
 String.prototype.normalizeHtml = JSSpec.DSL.forString.normalizeHtml;
 String.prototype.asHtml = String.prototype.normalizeHtml; //@deprecated
-
+String.prototype.strip = function() {return this.replace(/^\s+/, '').replace(/\s+$/, '');}
 
 
 /**
