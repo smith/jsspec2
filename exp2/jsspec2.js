@@ -21,118 +21,144 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  */
-var jsspec = function() {
-	for(var i = 0; i < arguments.length; i += 2) {
-		var name = arguments[i];
-		var func = arguments[i + 1];
-		var example = new jsspec.Example(name, func);
-		example.run();
-	}
-};
-
-
-
-jsspec.ConsoleReporter = function() {};
-jsspec.ConsoleReporter.prototype = {
-	report: function(message) {
-		console.log(message);
-	}
-}
-
-
-
-jsspec.NullReporter = function() {};
-jsspec.NullReporter.prototype = {
-	report: function(message) {}
-}
-
-
-
-jsspec.ExpectationFailure = function(name, expected, actual) {
-	this.name = name;
-	this.expected = expected;
-	this.actual = actual;
-}
-
-
-
-jsspec.Value = function(name, value) {
-	this.name = name;
-	this.value = value;
-}
-jsspec.Value.prototype = {
-	should_be: function(expected) {
-		if(this.value === expected) return;
-		throw new jsspec.ExpectationFailure(this.name, expected, this.value);
-	}
-}
-
-
-
-jsspec.Example = function(name, func) {
-	this.name = name;
-	this.func = func;
-	this.satisfied = null;
-	this.givens = {};
-}
-jsspec.Example.prototype = {
-	addGivenObjects: function(name, objs) {
-		this.givens[name] = objs;
-	},
-	
-	run: function(reporter) {
-		reporter = reporter || jsspec.options.reporter;
-		
-		var self = this;
-		var context = {};
-		for(var name in this.givens) {
-			var objs = this.givens[name];
-			for(var name in objs) {
-				context[name] = new jsspec.Value(name, objs[name]);
-			}
-		}
-		
-		var dsl = function(name, value) {
-			if(arguments.length === 1) {
-				return context[name];
-			} else if(arguments.length === 2) {
-				context[name] = new jsspec.Value(name, value);
-				if(self._currentGiven) self.givens[self._currentGiven][name] = value;
-			} else {
-				throw 'wrong number of arguments: ' + arguments.length;
-			}
-		};
-		dsl.given = function(name) {
-			self.givens[name] = {};
-			self._currentGiven = name;
-		};
-		
-		try {
-			this.func(dsl);
-			this.satisfied = true;
-		} catch(e) {
-			if(e instanceof jsspec.ExpectationFailure) {
-				this.satisfied = false;
-				
-				reporter.report(this.name + ':\n');
-				if(this.givens) {
-					for(var name in this.givens) {
-						var objs = this.givens[name];
-						var message = [];
-						for(var oname in objs) message.push(oname + ' ' + objs[oname]);
-						reporter.report('- given ' + name + ': ' + message.join(', ') + '\n');
-					}
+this.jsspec = (function() {
+	// host environment
+	var host = function() {
+		if(this.navigator) {
+			// in browser
+			return {
+				log: function(message) {
+					var escaped = (message + '\n').replace(/</img, '&lt;').replace(/\n/img, '<br />');
+					document.write(escaped);
 				}
-				reporter.report('- ' + e.name + ' should be ' + e.expected + ' but ' + e.actual);
-			} else {
-				throw e;
+			}
+		} else if(this.LoadModule) {
+			// jshost (jslibs)
+			var jshost = {};
+			LoadModule.call(jshost, 'jsstd');
+			return {
+				log: function(message) {
+					jshost.Print(message + '\n');
+				}
+			}
+		} else if(this.load) {
+			return {
+				log: function(message) {
+					print(message);
+				}
 			}
 		}
+	}();
+
+	
+	
+	var Runner = function() {
+		this.runnable = {};
+	};
+	Runner.prototype = {
+		addScenario: function(scenario) {
+			this.runnable[scenario.name] = scenario;
+		},
+		run: function() {
+			for(var name in this.runnable) {
+				this.runnable[name].run();
+			}
+		}
+	};
+	
+	
+	
+	var TextLogger = function(host) {
+		this.host = host;
 	}
-}
+	TextLogger.prototype.log = function(message) {
+		this.host.log(message);
+	}
+	
+	
+	var EnglishReporter = function() {}
+	EnglishReporter.prototype.report = function(nameOfActual, expected, actual) {
+		jsspec.logger.log('- ' + jsspec.currentScenario.name + ': [' + nameOfActual + '] should be [' + expected + '] but [' + actual + ']');
+	}
+	var KoreanReporter = function() {}
+	KoreanReporter.prototype.report = function(nameOfActual, expected, actual) {
+		jsspec.logger.log('- ' + jsspec.currentScenario.name + ': [' + nameOfActual + ']의 값은 [' + expected + ']이어야 하지만 [' + actual + ']이기 때문에 실패했습니다.');
+	}
+	
+	
+	
+	var Scenario = function(name, func) {
+		this.name = name;
+		this.func = func;
+	};
+	Scenario.prototype = {
+		run: function() {
+			jsspec.currentScenario = this;
+			try {
+				this.func();
+			} finally {
+				jsspec.currentScenario = null;
+			}
+		}
+	};
+	
 
+	
+	var context = {};
+	
+	
+	
+	var value_of = function(nameOfActual) {
+		return {
+			should_be: function(expected) {
+				var actual = context[nameOfActual];
+				if(actual !== expected) {
+					jsspec.reporter.report(nameOfActual, expected, actual);
+				}
+			}
+		}
+	};
+	
+	
+	
+	var bdd_dsl = {
+		runner: new Runner(),
+		scenario: function(name, func) {this.runner.addScenario(new Scenario(name, func));},
+		run: function() {this.runner.run();},
+		_: context,
+		value_of: value_of
+	};
+	
+	return {
+		// classes
+		Runner: Runner,
+		Scenario: Scenario,
+		EnglishReporter: EnglishReporter,
+		KoreanReporter: KoreanReporter,
+		
+		// instances
+		context: context,
+		value_of: value_of,
+		logger: new TextLogger(host),
+		reporter: new EnglishReporter(),
 
-
-jsspec.options = {
-	reporter: new jsspec.ConsoleReporter()
-}
+		// functions
+		switchLogger: function(logger) {
+			this._logger = this.logger;
+			this.logger = logger;
+		},
+		restoreLogger: function() {
+			this.logger = this._logger;
+		},
+		switchReporter: function(reporter) {
+			this._reporter = this.reporter;
+			this.reporter = reporter;
+		},
+		restoreReporter: function() {
+			this.reporter = this._reporter;
+		},
+		
+		// DSLs
+		bdd_dsl: bdd_dsl
+	};
+})();

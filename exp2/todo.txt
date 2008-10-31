@@ -1,11 +1,7 @@
-jsspec.dsl.BDD(function(_) {
-	_.given('odd and even numbers');
-		_('odd', 1);
-		_('even', 1);
-	
-	_.when('add two numbers');
-		_('added', _('odd') + _('even'));
-	
-	_.then('should be odd');
-		_('added').should_be(3);
-});
+HtmlLogger
+ * 인쇄 가능하게.
+
+Summary
+
+Full-stack
+ * Story, As_a_role, I_want_feature, So_that_benefit
