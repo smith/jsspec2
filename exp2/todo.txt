@@ -1,7 +1,0 @@
-HtmlLogger
- * 인쇄 가능하게.
-
-Summary
-
-Full-stack
- * Story, As_a_role, I_want_feature, So_that_benefit
