@@ -229,25 +229,34 @@ jsspec.DummyReporter = jsspec.Reporter.extend({
 	}
 });
 
+jsspec.host = jsspec.HostEnvironment.getInstance();
 
-
-jsspec.dsl = {};
-jsspec.dsl.TDD = function(sets) {
-	var report = new jsspec.ConsoleReporter(jsspec.host);
-	
-	for(var setname in sets) {
-		var exset = new jsspec.ExampleSet(setname);
-		var exampleMap = sets[setname];
-		for(var exname in exampleMap) {
-			exset.addExample(new jsspec.Example(exname, exampleMap[exname]));
-		}
-		exset.run(report);
-	}
-	
+jsspec.dsl = {
+	TDD: new (Class.extend({
+		init: function() {
+			this.current = null;
+			this.exsets = [];
+			this.reporter = new jsspec.ConsoleReporter(jsspec.host);
+		},
+		suite: function(name) {
+			this.current = new jsspec.ExampleSet(name);
+			this.exsets.push(this.current);
+			return this;
+		},
+		test: function(name, func) {
+			this.current.addExample(new jsspec.Example(name, func));
+			return this;
+		},
+		run: function() {
+			for(var i = 0; i < this.exsets.length; i++) {
+				this.exsets[i].run(this.reporter);
+			}
+		},
+		assertEquals: jsspec.Assertion.assertEquals
+	}))
 };
 
 
-jsspec.host = jsspec.HostEnvironment.getInstance();
 
 return jsspec;
 
