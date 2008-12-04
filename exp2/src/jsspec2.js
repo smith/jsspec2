@@ -25,9 +25,6 @@ var jsspec = (function() {
 
 
 
-// root context holder
-var root = this;
-
 // Simple JavaScript Inheritance from http://ejohn.org/blog/simple-javascript-inheritance/
 var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
 // The base Class implementation (does nothing)
@@ -84,23 +81,28 @@ Class.extend = function(prop) {
 
 
 
-var HostEnvironment = Class.extend({
+//root context holder
+var root = this;
+
+var jsspec = {};
+
+jsspec.HostEnvironment = Class.extend({
 	log: function(message) {throw "Not implemented";}
 });
-HostEnvironment.getInstance = function() {
+jsspec.HostEnvironment.getInstance = function() {
 	if(root.navigator) {
-		return new BrowserHostEnvironment();
+		return new jsspec.BrowserHostEnvironment();
 	} else if(root.load) {
-		return new RhinoHostEnvironment();
+		return new jsspec.RhinoHostEnvironment();
 	}
 }
-var BrowserHostEnvironment = HostEnvironment.extend({
+jsspec.BrowserHostEnvironment = jsspec.HostEnvironment.extend({
 	log: function(message) {
 		var escaped = (message + '\n').replace(/</img, '&lt;').replace(/\n/img, '<br />');
 		document.write(escaped);
 	}
 });
-var RhinoHostEnvironment = HostEnvironment.extend({
+jsspec.RhinoHostEnvironment = jsspec.HostEnvironment.extend({
 	log: function(message) {
 		print(message);
 	}
@@ -108,9 +110,146 @@ var RhinoHostEnvironment = HostEnvironment.extend({
 
 
 
-return {
-	host: HostEnvironment.getInstance()
+jsspec.Assertion = {
+	assertEquals: function(expected, actual) {
+		if(expected !== actual) throw 'Expected [' + expected + '] but [' + actual + ']';
+	}
 }
+
+
+
+jsspec.Example = Class.extend({
+	init: function(name, func) {
+		this.name = name;
+		this.func = func;
+		this.result = null;
+	},
+	run: function(reporter) {
+		reporter.onExampleStart(this);
+		
+		var exception = null;
+		
+		try {
+			this.func();
+		} catch(e) {
+			exception = e;
+		}
+		
+		this.result = new jsspec.Result(this, exception);
+		
+		reporter.onExampleEnd(this);
+	}
+});
+
+
+
+jsspec.ExampleSet = Class.extend({
+	init: function(name, examples) {
+		this.name = name;
+		this.examples = examples || [];
+	},
+	addExample: function(example) {
+		this.examples.push(example);
+	},
+	addExamples: function(examples) {
+		for(var i = 0; i < examples.length; i++) {
+			this.addExample(examples[i]);
+		}
+	},
+	getLength: function() {
+		return this.examples.length;
+	},
+	getExampleAt: function(index) {
+		return this.examples[index];
+	},
+	run: function(reporter) {
+		reporter.onExampleSetStart(this);
+		
+		for(var i = 0; i < this.getLength(); i++) {
+			var example = this.getExampleAt(i);
+			example.run(reporter);
+		}
+		
+		reporter.onExampleSetEnd(this);
+	}
+});
+
+
+jsspec.Result = Class.extend({
+	init: function(example, exception) {
+		this.example = example;
+		this.exception = exception;
+	}
+});
+
+
+
+jsspec.Reporter = Class.extend({
+	init: function(host) {
+		this.host = host;
+	},
+	onExampleSetStart: function(exset) {throw "Not implemented";},
+	onExampleSetEnd: function(exset) {throw "Not implemented";},
+	onExampleStart: function(example) {throw "Not implemented";},
+	onExampleEnd: function(example) {throw "Not implemented";}
+});
+
+jsspec.ConsoleReporter = jsspec.Reporter.extend({
+	onExampleSetStart: function(exset) {
+		this.host.log('[' + exset.name + ']');
+	},
+	onExampleSetEnd: function(exset) {
+		this.host.log('');
+	},
+	onExampleStart: function(example) {
+		this.host.log(example.name);
+	},
+	onExampleEnd: function(example) {
+		if(example.result.exception) {
+			this.host.log('- ' + example.result.exception);
+		}
+	}
+});
+
+jsspec.DummyReporter = jsspec.Reporter.extend({
+	init: function() {
+		this.log = [];
+	},
+	onExampleSetStart: function(exset) {
+		this.log.push({op: 'onExampleSetStart', exset:exset});
+	},
+	onExampleSetEnd: function(exset) {
+		this.log.push({op: 'onExampleSetEnd', exset:exset});
+	},
+	onExampleStart: function(example) {
+		this.log.push({op: 'onExampleStart', example:example});
+	},
+	onExampleEnd: function(example) {
+		this.log.push({op: 'onExampleEnd', example:example});
+	}
+});
+
+
+
+jsspec.dsl = {};
+jsspec.dsl.TDD = function(sets) {
+	var report = new jsspec.ConsoleReporter(jsspec.host);
+	
+	for(var setname in sets) {
+		var exset = new jsspec.ExampleSet(setname);
+		var exampleMap = sets[setname];
+		for(var exname in exampleMap) {
+			exset.addExample(new jsspec.Example(exname, exampleMap[exname]));
+		}
+		exset.run(report);
+	}
+	
+};
+
+
+jsspec.host = jsspec.HostEnvironment.getInstance();
+
+return jsspec;
 
 
 
