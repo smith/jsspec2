@@ -10,25 +10,25 @@ suite('Success, failure and error')
 		var example = new jsspec.Example('Ex', function() {/* do nothing */});
 		example.run(this.reporter);
 		
-		assertEquals(true, example.result.success());
-		assertEquals(false, example.result.failure());
-		assertEquals(false, example.result.error());
+		assertEquals(true, example.getResult().success());
+		assertEquals(false, example.getResult().failure());
+		assertEquals(false, example.getResult().error());
 	})
 	test('Expected exception should be treated as a failure', function() {
 		var example = new jsspec.Example('Ex', function() {jsspec.Assertion.assertEquals('A', 'B');})
 		example.run(this.reporter);
 		
-		assertEquals(false, example.result.success());
-		assertEquals(true, example.result.failure());
-		assertEquals(false, example.result.error());
+		assertEquals(false, example.getResult().success());
+		assertEquals(true, example.getResult().failure());
+		assertEquals(false, example.getResult().error());
 	})
 	test('Unexpected exception should be treated as an error', function() {
 		var example = new jsspec.Example('Ex', function() {throw "Unexpected exception";})
 		example.run(this.reporter);
 		
-		assertEquals(false, example.result.success());
-		assertEquals(false, example.result.failure());
-		assertEquals(true, example.result.error());
+		assertEquals(false, example.getResult().success());
+		assertEquals(false, example.getResult().failure());
+		assertEquals(true, example.getResult().error());
 	})
 
 suite('Test fixtures')
@@ -44,7 +44,7 @@ suite('Test fixtures')
 		this.exampleSet.addExample(new jsspec.Example('Ex2', function() {log.push('ex2');}));
 		this.exampleSet.run(this.reporter);
 		
-		assertEquals(['setup', 'ex1', 'teardown', 'setup', 'ex2', 'teardown'].join(','), log.join(','));
+		assertEquals(['setup', 'ex1', 'teardown', 'setup', 'ex2', 'teardown'], log);
 	})
 	test('Teardown should be executed on every condition', function() {
 		var log = [];
@@ -53,7 +53,7 @@ suite('Test fixtures')
 		this.exampleSet.addExample(new jsspec.Example('Ex2', function() {jsspec.Assertion.assertEquals('A', 'B');}));
 		this.exampleSet.run(this.reporter);
 		
-		assertEquals(['teardown', 'teardown'].join(','), log.join(','));
+		assertEquals(['teardown', 'teardown'], log);
 	})
 	test('Context should be bound to [this]', function() {
 		var log = [];
@@ -62,7 +62,7 @@ suite('Test fixtures')
 		this.exampleSet.addExample(new jsspec.Example('Ex', function() {log.push(this.counter++);}));
 		this.exampleSet.run(this.reporter);
 		
-		assertEquals([0,1,2].join(','), log.join(','));
+		assertEquals([0,1,2], log);
 	})
 	test('Each test should be executed in isolated context', function() {
 		var log = [];
@@ -73,7 +73,7 @@ suite('Test fixtures')
 		this.exampleSet.addExample(new jsspec.Example('Ex2', function() {log.push(this.counter);}));
 		this.exampleSet.run(this.reporter);
 		
-		assertEquals(['1', '1'].join(','), log.join(','));
+		assertEquals([1, 1], log);
 	})
 
 suite('Assertions')
@@ -111,6 +111,20 @@ suite('Assertions')
 	})
 
 suite('Equality')
+	test('Null', function() {
+		assertTrue(jsspec.Matcher.getInstance(null, null).matches());
+		assertFalse(jsspec.Matcher.getInstance(null, 'A').matches());
+		assertFalse(jsspec.Matcher.getInstance('A', null).matches());
+	})
+	test('Undefined', function() {
+		assertTrue(jsspec.Matcher.getInstance(undefined, undefined).matches());
+		assertFalse(jsspec.Matcher.getInstance(undefined, 'A').matches());
+		assertFalse(jsspec.Matcher.getInstance('A', undefined).matches());
+	})
+	test('Undefined and Null', function() {
+		assertFalse(jsspec.Matcher.getInstance(undefined, null).matches());
+		assertFalse(jsspec.Matcher.getInstance(null, undefined).matches());
+	})
 	test('String', function() {
 		assertTrue(jsspec.Matcher.getInstance('A', 'A').matches());
 		assertFalse(jsspec.Matcher.getInstance('A', 'B').matches());
@@ -174,8 +188,8 @@ suite('ExampleSet')
 		exampleSet.run(reporter);
 		
 		assertEquals(2, exampleSet.getLength());
-		assertEquals(false, !!exampleSet.getExampleAt(0).result.exception);
-		assertEquals(true, !!exampleSet.getExampleAt(1).result.exception);
+		assertEquals(false, !!exampleSet.getExampleAt(0).getResult().getException());
+		assertEquals(true, !!exampleSet.getExampleAt(1).getResult().getException());
 	})
 
 suite('Reporter')
@@ -183,38 +197,26 @@ suite('Reporter')
 		var reporter = new jsspec.DummyReporter();
 		
 		var exampleSet = new jsspec.ExampleSet('Set1');
-		var ex1 = new jsspec.Example('Ex1', function() {});
-		var ex2 = new jsspec.Example('Ex2', function() {});
-		
-		exampleSet.addExample(ex1);
-		exampleSet.addExample(ex2);
+		exampleSet.addExample(new jsspec.Example('Ex1', function() {}));
+		exampleSet.addExample(new jsspec.Example('Ex2', function() {}));
 		
 		reporter.onStart();
 		exampleSet.run(reporter);
 		reporter.onEnd();
 		
-		assertEquals(8, reporter.log.length);
-		assertEquals('onStart', reporter.log[0].op);
-		
-		assertEquals('onExampleSetStart', reporter.log[1].op);
-		assertEquals(exampleSet, reporter.log[1].exset);
-		
-		assertEquals('onExampleStart', reporter.log[2].op);
-		assertEquals(ex1, reporter.log[2].example);
-		
-		assertEquals('onExampleEnd', reporter.log[3].op);
-		assertEquals(ex1, reporter.log[3].example);
-		
-		assertEquals('onExampleStart', reporter.log[4].op);
-		assertEquals(ex2, reporter.log[4].example);
-		
-		assertEquals('onExampleEnd', reporter.log[5].op);
-		assertEquals(ex2, reporter.log[5].example);
-		
-		assertEquals('onExampleSetEnd', reporter.log[6].op);
-		assertEquals(exampleSet, reporter.log[6].exset);
-	
-		assertEquals('onEnd', reporter.log[7].op);
+		assertEquals(
+			[
+				{op:'onStart'},
+				{op:'onExampleSetStart', exset:'Set1'},
+				{op:'onExampleStart', example:'Ex1'},
+				{op:'onExampleEnd', example:'Ex1'},
+				{op:'onExampleStart', example:'Ex2'},
+				{op:'onExampleEnd', example:'Ex2'},
+				{op:'onExampleSetEnd', exset:'Set1'},
+				{op:'onEnd'}
+			],
+			reporter.log
+		);
 	})
 
 suite('DSL for Test-Driven Development')

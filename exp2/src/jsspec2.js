@@ -133,10 +133,10 @@ jsspec.WScriptHostEnvironment = jsspec.HostEnvironment.extend({
 
 jsspec.ExpectationFailure = Class.extend({
 	init: function(message) {
-		this.message = message;
+		this._message = message;
 	},
 	toString: function() {
-		return this.message;
+		return this._message;
 	}
 });
 
@@ -147,7 +147,8 @@ jsspec.Assertion = {
 		throw new jsspec.ExpectationFailure(description || 'Failed');
 	},
 	assertEquals: function(expected, actual, description) {
-		if(expected !== actual) throw new jsspec.ExpectationFailure((description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']');
+		var matcher = jsspec.Matcher.getInstance(expected, actual);
+		if(!matcher.matches()) throw new jsspec.ExpectationFailure((description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']');
 	},
 	assertType: function(expected, actual, description) {
 		var type = jsspec.util.getType(actual);
@@ -170,9 +171,13 @@ jsspec.Matcher = Class.extend({
 		this._expected = expected;
 		this._actual = actual;
 	},
-	matches: function() {return this._expected === this._actual;}
+	getExpected: function() {return this._expected;},
+	getActual: function() {return this._actual;},
+	matches: function() {return this.getExpected() === this.getActual();}
 });
 jsspec.Matcher.getInstance = function(expected, actual) {
+	if(expected === null || expected === undefined) return new jsspec.Matcher(expected, actual);
+	
 	var type = jsspec.util.getType(expected);
 	var clazz = null;
 	
@@ -195,12 +200,12 @@ jsspec.Matcher.getInstance = function(expected, actual) {
 
 jsspec.ArrayMatcher = jsspec.Matcher.extend({
 	matches: function() {
-		if(!this._actual) return false;
-		if(this._expected.length !== this._actual.length) return false;
+		if(!this.getActual()) return false;
+		if(this.getExpected().length !== this.getActual().length) return false;
 		
-		for(var i = 0; i < this._expected.length; i++) {
-			var expected = this._expected[i];
-			var actual = this._actual[i];
+		for(var i = 0; i < this.getExpected().length; i++) {
+			var expected = this.getExpected()[i];
+			var actual = this.getActual()[i];
 			if(!jsspec.Matcher.getInstance(expected, actual).matches()) return false;
 		}
 		
@@ -212,8 +217,8 @@ jsspec.ArrayMatcher = jsspec.Matcher.extend({
 
 jsspec.DateMatcher = jsspec.Matcher.extend({
 	matches: function() {
-		if(!this._actual) return false;
-		return this._expected.getTime() === this._actual.getTime();
+		if(!this.getActual()) return false;
+		return this.getExpected().getTime() === this.getActual().getTime();
 	}
 });
 
@@ -221,8 +226,8 @@ jsspec.DateMatcher = jsspec.Matcher.extend({
 
 jsspec.RegexpMatcher = jsspec.Matcher.extend({
 	matches: function() {
-		if(!this._actual) return false;
-		return this._expected.source === this._actual.source;
+		if(!this.getActual()) return false;
+		return this.getExpected().source === this.getActual().source;
 	}
 });
 
@@ -230,17 +235,17 @@ jsspec.RegexpMatcher = jsspec.Matcher.extend({
 
 jsspec.ObjectMatcher = jsspec.Matcher.extend({
 	matches: function() {
-		if(!this._actual) return false;
+		if(!this.getActual()) return false;
 
-		for(var key in this._expected) {
-			var expected = this._expected[key];
-			var actual = this._actual[key];
+		for(var key in this.getExpected()) {
+			var expected = this.getExpected()[key];
+			var actual = this.getActual()[key];
 			if(!jsspec.Matcher.getInstance(expected, actual).matches()) return false;
 		}
 		
-		for(var key in this._actual) {
-			var expected = this._actual[key];
-			var actual = this._expected[key];
+		for(var key in this.getActual()) {
+			var expected = this.getActual()[key];
+			var actual = this.getExpected()[key];
 			if(!jsspec.Matcher.getInstance(expected, actual).matches()) return false;
 		}
 		
@@ -252,22 +257,27 @@ jsspec.ObjectMatcher = jsspec.Matcher.extend({
 
 jsspec.Example = Class.extend({
 	init: function(name, func) {
-		this.name = name;
-		this.func = func;
-		this.result = null;
+		this._name = name;
+		this._func = func;
+		this._result = null;
 	},
+	
+	getName: function() {return this._name;},
+	getFunction: function() {return this._func;},
+	getResult: function() {return this._result;},
+	
 	run: function(reporter, context) {
 		reporter.onExampleStart(this);
 		
 		var exception = null;
 		
 		try {
-			this.func.apply(context);
+			this.getFunction().apply(context);
 		} catch(e) {
 			exception = e;
 		}
 		
-		this.result = new jsspec.Result(this, exception);
+		this._result = new jsspec.Result(this, exception);
 		
 		reporter.onExampleEnd(this);
 	}
@@ -277,13 +287,17 @@ jsspec.Example = Class.extend({
 
 jsspec.ExampleSet = Class.extend({
 	init: function(name, examples) {
-		this.name = name;
-		this.examples = examples || [];
-		this.setup = EMPTY_FUNCTION;
-		this.teardown = EMPTY_FUNCTION;
+		this._name = name;
+		this._examples = examples || [];
+		this._setup = EMPTY_FUNCTION;
+		this._teardown = EMPTY_FUNCTION;
 	},
+	getName: function() {return this._name;},
+	getSetup: function() {return this._setup;},
+	getTeardown: function() {return this._teardown;},
+	
 	addExample: function(example) {
-		this.examples.push(example);
+		this._examples.push(example);
 	},
 	addExamples: function(examples) {
 		for(var i = 0; i < examples.length; i++) {
@@ -291,16 +305,16 @@ jsspec.ExampleSet = Class.extend({
 		}
 	},
 	setSetup: function(func) {
-		this.setup = func;
+		this._setup = func;
 	},
 	setTeardown: function(func) {
-		this.teardown = func;
+		this._teardown = func;
 	},
 	getLength: function() {
-		return this.examples.length;
+		return this._examples.length;
 	},
 	getExampleAt: function(index) {
-		return this.examples[index];
+		return this._examples[index];
 	},
 	run: function(reporter) {
 		reporter.onExampleSetStart(this);
@@ -308,9 +322,9 @@ jsspec.ExampleSet = Class.extend({
 		for(var i = 0; i < this.getLength(); i++) {
 			var context = {};
 			
-			this.setup.apply(context);
+			this.getSetup().apply(context);
 			this.getExampleAt(i).run(reporter, context);
-			this.teardown.apply(context);
+			this.getTeardown().apply(context);
 		}
 		
 		reporter.onExampleSetEnd(this);
@@ -320,17 +334,21 @@ jsspec.ExampleSet = Class.extend({
 
 jsspec.Result = Class.extend({
 	init: function(example, exception) {
-		this.example = example;
-		this.exception = exception;
+		this._example = example;
+		this._exception = exception;
 	},
+	
+	getExample: function() {return this._example;},
+	getException: function() {return this._exception;},
+	
 	success: function() {
-		return !this.exception;
+		return !this.getException();
 	},
 	failure: function() {
-		return !this.success() && (this.exception instanceof jsspec.ExpectationFailure);
+		return !this.success() && (this.getException() instanceof jsspec.ExpectationFailure);
 	},
 	error: function() {
-		return !this.success() && !(this.exception instanceof jsspec.ExpectationFailure);
+		return !this.success() && !(this.getException() instanceof jsspec.ExpectationFailure);
 	}
 });
 
@@ -338,7 +356,7 @@ jsspec.Result = Class.extend({
 
 jsspec.Reporter = Class.extend({
 	init: function(host) {
-		this.host = host;
+		this._host = host;
 	},
 	onStart: function() {throw 'Not implemented';},
 	onEnd: function() {throw 'Not implemented';},
@@ -351,31 +369,34 @@ jsspec.Reporter = Class.extend({
 jsspec.ConsoleReporter = jsspec.Reporter.extend({
 	init: function(host) {
 		this._super(host);
-		this.total = 0;
-		this.failures = 0;
-		this.errors = 0;
+		this._total = 0;
+		this._failures = 0;
+		this._errors = 0;
 	},
 	onStart: function() {
-		this.host.log('JSSpec2 on ' + this.host.getDescription());
-		this.host.log('');
+		this._host.log('JSSpec2 on ' + this._host.getDescription());
+		this._host.log('');
 	},
 	onEnd: function() {
-		this.host.log('----');
-		this.host.log('Total: ' + this.total + ', Failures: ' + this.failures + ', Errors: ' + this.errors + '');
+		this._host.log('----');
+		this._host.log('Total: ' + this._total + ', Failures: ' + this._failures + ', Errors: ' + this._errors + '');
 	},
 	onExampleSetStart: function(exset) {
-		this.host.log('[' + exset.name + ']');
+		this._host.log('[' + exset.getName() + ']');
 	},
 	onExampleSetEnd: function(exset) {
-		this.host.log('');
+		this._host.log('');
 	},
 	onExampleStart: function(example) {
-		this.host.log(example.name);
+		this._host.log(example.getName());
 	},
 	onExampleEnd: function(example) {
-		if(example.result.exception) {
-			this.host.log('- ' + example.result.exception);
-			this.failures++;
+		this._total++;
+		
+		var exception = example.getResult().getException();
+		if(exception) {
+			this._host.log('- ' + exception);
+			this._failures++;
 		}
 	}
 });
@@ -391,16 +412,16 @@ jsspec.DummyReporter = jsspec.Reporter.extend({
 		this.log.push({op: 'onEnd'});
 	},
 	onExampleSetStart: function(exset) {
-		this.log.push({op: 'onExampleSetStart', exset:exset});
+		this.log.push({op: 'onExampleSetStart', exset:exset.getName()});
 	},
 	onExampleSetEnd: function(exset) {
-		this.log.push({op: 'onExampleSetEnd', exset:exset});
+		this.log.push({op: 'onExampleSetEnd', exset:exset.getName()});
 	},
 	onExampleStart: function(example) {
-		this.log.push({op: 'onExampleStart', example:example});
+		this.log.push({op: 'onExampleStart', example:example.getName()});
 	},
 	onExampleEnd: function(example) {
-		this.log.push({op: 'onExampleEnd', example:example});
+		this.log.push({op: 'onExampleEnd', example:example.getName()});
 	}
 });
 
