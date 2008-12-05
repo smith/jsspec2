@@ -94,6 +94,8 @@ jsspec.HostEnvironment.getInstance = function() {
 		return new jsspec.BrowserHostEnvironment();
 	} else if(root.load) {
 		return new jsspec.RhinoHostEnvironment();
+	} else if(root.WScript) {
+		return new jsspec.WScriptHostEnvironment();
 	}
 }
 jsspec.BrowserHostEnvironment = jsspec.HostEnvironment.extend({
@@ -105,6 +107,11 @@ jsspec.BrowserHostEnvironment = jsspec.HostEnvironment.extend({
 jsspec.RhinoHostEnvironment = jsspec.HostEnvironment.extend({
 	log: function(message) {
 		print(message);
+	}
+});
+jsspec.WScriptHostEnvironment = jsspec.HostEnvironment.extend({
+	log: function(message) {
+		WScript.Echo(message);
 	}
 });
 
