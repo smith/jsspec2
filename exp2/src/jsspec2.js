@@ -43,8 +43,8 @@ Class.extend = function(prop) {
 	// Copy the properties over onto the new prototype
 	for (var name in prop) {
 		// Check if we're overwriting an existing function
-		prototype[name] = typeof prop[name] == "function" && 
-		typeof _super[name] == "function" && fnTest.test(prop[name]) ?
+		prototype[name] = typeof prop[name] == 'function' && 
+		typeof _super[name] == 'function' && fnTest.test(prop[name]) ?
 		(function(name, fn){
 			return function() {
 				var tmp = this._super;
@@ -87,7 +87,7 @@ var root = this;
 var jsspec = {};
 
 jsspec.HostEnvironment = Class.extend({
-	log: function(message) {throw "Not implemented";}
+	log: function(message) {throw 'Not implemented';}
 });
 jsspec.HostEnvironment.getInstance = function() {
 	if(root.navigator) {
@@ -118,8 +118,29 @@ jsspec.WScriptHostEnvironment = jsspec.HostEnvironment.extend({
 
 
 jsspec.Assertion = {
-	assertEquals: function(expected, actual) {
-		if(expected !== actual) throw 'Expected [' + expected + '] but [' + actual + ']';
+	fail: function(description) {
+		throw (description || 'Failed');
+	},
+	assertEquals: function(expected, actual, description) {
+		if(expected !== actual) throw (description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']';
+	},
+	assertType: function(expected, actual, description) {
+		var _typeof = function(o) {
+			var ctor = o.constructor;
+			
+			if(ctor == Array) {
+				return 'array';
+			} else if(ctor == Date) {
+				return 'date';
+			} else if(ctor == RegExp) {
+				return 'regexp';
+			} else {
+				return typeof o;
+			}
+		}
+
+		var type = _typeof(actual);
+		if(expected !== type) throw (description || 'Type expectation failure') + '. Expected [' + expected + '] but [' + type + ']';
 	}
 }
 
@@ -195,13 +216,29 @@ jsspec.Reporter = Class.extend({
 	init: function(host) {
 		this.host = host;
 	},
-	onExampleSetStart: function(exset) {throw "Not implemented";},
-	onExampleSetEnd: function(exset) {throw "Not implemented";},
-	onExampleStart: function(example) {throw "Not implemented";},
-	onExampleEnd: function(example) {throw "Not implemented";}
+	onStart: function() {throw 'Not implemented';},
+	onEnd: function() {throw 'Not implemented';},
+	onExampleSetStart: function(exset) {throw 'Not implemented';},
+	onExampleSetEnd: function(exset) {throw 'Not implemented';},
+	onExampleStart: function(example) {throw 'Not implemented';},
+	onExampleEnd: function(example) {throw 'Not implemented';}
 });
 
 jsspec.ConsoleReporter = jsspec.Reporter.extend({
+	init: function(host) {
+		this._super(host);
+		this.total = 0;
+		this.failures = 0;
+		this.errors = 0;
+	},
+	onStart: function() {
+		this.host.log('JSSpec2 started');
+		this.host.log('');
+	},
+	onEnd: function() {
+		this.host.log('----');
+		this.host.log('Total: ' + this.total + ', Failures: ' + this.failures + ', Errors: ' + this.errors + '');
+	},
 	onExampleSetStart: function(exset) {
 		this.host.log('[' + exset.name + ']');
 	},
@@ -221,6 +258,12 @@ jsspec.ConsoleReporter = jsspec.Reporter.extend({
 jsspec.DummyReporter = jsspec.Reporter.extend({
 	init: function() {
 		this.log = [];
+	},
+	onStart: function() {
+		this.log.push({op: 'onStart'});
+	},
+	onEnd: function() {
+		this.log.push({op: 'onEnd'});
 	},
 	onExampleSetStart: function(exset) {
 		this.log.push({op: 'onExampleSetStart', exset:exset});
@@ -255,11 +298,17 @@ jsspec.dsl = {
 			return this;
 		},
 		run: function() {
+			this.reporter.onStart();
+			
 			for(var i = 0; i < this.exsets.length; i++) {
 				this.exsets[i].run(this.reporter);
 			}
+			
+			this.reporter.onEnd();
 		},
-		assertEquals: jsspec.Assertion.assertEquals
+		assertEquals: jsspec.Assertion.assertEquals,
+		assertType: jsspec.Assertion.assertType,
+		fail: jsspec.Assertion.fail
 	}))
 };
 
