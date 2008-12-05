@@ -393,10 +393,14 @@ jsspec.ConsoleReporter = jsspec.Reporter.extend({
 	onExampleEnd: function(example) {
 		this._total++;
 		
-		var exception = example.getResult().getException();
-		if(exception) {
-			this._host.log('- ' + exception);
+		var result = example.getResult();
+		if(result.success()) return;
+		
+		this._host.log('- ' + result.getException());
+		if(result.failure()) {
 			this._failures++;
+		} else {
+			this._errors++;
 		}
 	}
 });

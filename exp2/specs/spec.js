@@ -219,7 +219,20 @@ suite('Reporter')
 		);
 	})
 
-suite('DSL for Test-Driven Development')
+suite('TODOs')
+	test('Stacktrace', function() {})
+	test('Readable failure messages', function() {})
+	test('HtmlReporter', function() {})
+	test('Conditional execution', function() {})
+	test('I18N', function() {})
+	test('More assertions', function() {})
+	test('DSL for Test-Driven Development', function() {})
+	test('DSL for Behavior-Driven Development', function() {})
+	test('Plain text runner', function() {})
+	test('Theory framework', function() {})
+	test('Mock framework', function() {})
+	test('Automated continuous testing', function() {})
+	test('Circular-reference free matcher', function() {})
 
 run();
 
