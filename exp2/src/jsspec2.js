@@ -86,8 +86,11 @@ var root = this;
 
 var jsspec = {};
 
+var EMPTY_FUNCTION = function() {}
+
 jsspec.HostEnvironment = Class.extend({
-	log: function(message) {throw 'Not implemented';}
+	log: function(message) {throw 'Not implemented';},
+	getDescription: function() {return 'Unknown environment'}
 });
 jsspec.HostEnvironment.getInstance = function() {
 	if(root.navigator) {
@@ -100,18 +103,29 @@ jsspec.HostEnvironment.getInstance = function() {
 }
 jsspec.BrowserHostEnvironment = jsspec.HostEnvironment.extend({
 	log: function(message) {
+		document.title = message;
+		
 		var escaped = (message + '\n').replace(/</img, '&lt;').replace(/\n/img, '<br />');
 		document.write(escaped);
+	},
+	getDescription: function() {
+		return navigator.userAgent;
 	}
 });
 jsspec.RhinoHostEnvironment = jsspec.HostEnvironment.extend({
 	log: function(message) {
 		print(message);
+	},
+	getDescription: function() {
+		return 'Rhino (Java ' + environment['java.version'] + ')';
 	}
 });
 jsspec.WScriptHostEnvironment = jsspec.HostEnvironment.extend({
 	log: function(message) {
 		WScript.Echo(message);
+	},
+	getDescription: function() {
+		return 'Windows Script Host ' + WScript.Version;
 	}
 });
 
@@ -175,6 +189,8 @@ jsspec.ExampleSet = Class.extend({
 	init: function(name, examples) {
 		this.name = name;
 		this.examples = examples || [];
+		this.setup = EMPTY_FUNCTION;
+		this.teardown = EMPTY_FUNCTION;
 	},
 	addExample: function(example) {
 		this.examples.push(example);
@@ -183,6 +199,12 @@ jsspec.ExampleSet = Class.extend({
 		for(var i = 0; i < examples.length; i++) {
 			this.addExample(examples[i]);
 		}
+	},
+	setSetup: function(func) {
+		this.setup = func;
+	},
+	setTeardown: function(func) {
+		this.teardown = func;
 	},
 	getLength: function() {
 		return this.examples.length;
@@ -195,7 +217,9 @@ jsspec.ExampleSet = Class.extend({
 		
 		for(var i = 0; i < this.getLength(); i++) {
 			var example = this.getExampleAt(i);
+			this.setup();
 			example.run(reporter);
+			this.teardown();
 		}
 		
 		reporter.onExampleSetEnd(this);
@@ -232,7 +256,7 @@ jsspec.ConsoleReporter = jsspec.Reporter.extend({
 		this.errors = 0;
 	},
 	onStart: function() {
-		this.host.log('JSSpec2 started');
+		this.host.log('JSSpec2 on ' + this.host.getDescription());
 		this.host.log('');
 	},
 	onEnd: function() {
@@ -251,6 +275,7 @@ jsspec.ConsoleReporter = jsspec.Reporter.extend({
 	onExampleEnd: function(example) {
 		if(example.result.exception) {
 			this.host.log('- ' + example.result.exception);
+			this.failures++;
 		}
 	}
 });
@@ -297,6 +322,12 @@ jsspec.dsl = {
 			this.current.addExample(new jsspec.Example(name, func));
 			return this;
 		},
+		setup: function() {
+			throw "TODO";
+		},
+		teardown: function() {
+			throw "TODO";
+		},
 		run: function() {
 			this.reporter.onStart();
 			
@@ -305,6 +336,8 @@ jsspec.dsl = {
 			}
 			
 			this.reporter.onEnd();
+			
+			return this;
 		},
 		assertEquals: jsspec.Assertion.assertEquals,
 		assertType: jsspec.Assertion.assertType,

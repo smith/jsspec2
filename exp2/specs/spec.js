@@ -2,6 +2,13 @@ with(jsspec.dsl.TDD) {
 
 suite('Assertion API')
 
+setup(function() {
+	
+})
+teardown(function() {
+	
+})
+
 test('Unconditional failure', function() {
 	assertEquals(true, !!jsspec.Assertion.fail);
 	
@@ -52,6 +59,20 @@ test('Type assertions for native types', function() {
 
 suite('Organization')
 
+test('Setup and Teardown', function() {
+	var reporter = new jsspec.DummyReporter();
+	
+	var log = [];
+	var exampleSet = new jsspec.ExampleSet('Set');
+	exampleSet.addExample(new jsspec.Example('Ex1', function() {log.push('ex1');}));
+	exampleSet.addExample(new jsspec.Example('Ex2', function() {log.push('ex2');}));
+	exampleSet.setSetup(function() {log.push('setup');}) 
+	exampleSet.setTeardown(function() {log.push('teardown');})
+	exampleSet.run(reporter);
+	
+	assertEquals(6, log.length);
+	assertEquals(['setup', 'ex1', 'teardown', 'setup', 'ex2', 'teardown'].join(','), log.join(','));
+})
 test('ExampleSet', function() {
 	var reporter = new jsspec.DummyReporter();
 	
