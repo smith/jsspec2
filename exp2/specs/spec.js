@@ -220,6 +220,7 @@ suite('Reporter')
 	})
 
 suite('TODOs')
+	test('Flash/Flex runner', function() {})
 	test('Stacktrace', function() {})
 	test('Readable failure messages', function() {})
 	test('HtmlReporter', function() {})
