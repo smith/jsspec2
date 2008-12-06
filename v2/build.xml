@@ -22,17 +22,17 @@
 		<mkdir dir="dist/lib" />
 	</target>
 	
-	<target name="generate_jsdoc" depends="init_dist_dirs">
-		<java jar="lib/jsdoc-toolkit/jsrun.jar" fork="true">
-			<sysproperty key="jsdoc.dir" path="lib/jsdoc-toolkit" />
-			<arg line="lib/jsdoc-toolkit/app/run.js -a -r -t=lib/jsdoc-toolkit/templates/jsdoc -d=dist/docs/api src/" />
-		</java>
-	</target>
-	
 	<target name="merge_javascripts">
 		<property name="cmd_line_prefix" value="lib/DependencyGraph.js src/" />
 		<property name="cmd_line_postfix" value="dist/src/" />
 		
 		<java jar="lib/js.jar" fork="true"><arg line="${cmd_line_prefix} jsspec2 ${cmd_line_postfix}" /></java>
+	</target>
+	
+	<target name="generate_jsdoc" depends="init_dist_dirs">
+		<java jar="lib/jsdoc-toolkit/jsrun.jar" fork="true">
+			<sysproperty key="jsdoc.dir" path="lib/jsdoc-toolkit" />
+			<arg line="lib/jsdoc-toolkit/app/run.js -a -r -t=lib/jsdoc-toolkit/templates/jsdoc -d=dist/docs/api src/" />
+		</java>
 	</target>
 </project>
