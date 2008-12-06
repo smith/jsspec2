@@ -9,5 +9,5 @@ function readFile(path) {
 	}
 }
 
-eval(readFile('src/jsspec2.js'));
-eval(readFile('specs/spec.js'));
+eval(readFile('../src/jsspec2.js'));
+eval(readFile('spec.js'));

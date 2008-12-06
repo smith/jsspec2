@@ -1,0 +1,81 @@
+<project name="xquared" default="build_all" basedir=".">
+	<property file="build.properties" />
+	
+	<target name="build_all" depends="build_client, build_server">
+		<tar destfile="dist/xquared_all_${DSTAMP}.tar">
+			<fileset dir="dist" excludes="*.gz" />
+		</tar>
+		<gzip destfile="dist/xquared_all_${DSTAMP}.tar.gz"><fileset file="dist/xquared_all_${DSTAMP}.tar" /></gzip>
+		<delete file="dist/xquared_all_${DSTAMP}.tar" />
+	</target>
+	
+	<target name="build_client" depends="compress_javascripts, generate_jsdoc">
+		<copy todir="dist/client/examples"><fileset dir="client/examples" /></copy>
+		<copy todir="dist/client/images"><fileset dir="client/images" /></copy>
+		<copy todir="dist/client/tests"><fileset dir="client/tests" /></copy>
+		<copy todir="dist/client/stylesheets"><fileset dir="client/stylesheets" /></copy>
+		<copy todir="dist/client/javascripts"><fileset dir="client/javascripts" /></copy>
+		<copy todir="dist/client" file="client/index.html"></copy>
+		<copy todir="dist/client" file="client/test.html"></copy>
+		<copy todir="dist" file="LICENSE"></copy>
+		<copy todir="dist" file="README"></copy>
+		
+		<tar destfile="dist/xquared_client_${DSTAMP}.tar">
+			<fileset dir="dist/client" />
+			<fileset file="LICENSE" />
+			<fileset file="README" />
+		</tar>
+		<gzip destfile="dist/xquared_client_${DSTAMP}.tar.gz"><fileset file="dist/xquared_client_${DSTAMP}.tar" /></gzip>
+		<delete file="dist/xquared_client_${DSTAMP}.tar" />
+	</target>
+	
+	<target name="build_server">
+	</target>
+	
+	<target name="init_dist_dirs">
+		<tstamp />
+		<delete dir="dist" />
+		<mkdir dir="dist" />
+		<mkdir dir="dist/client" />
+		<mkdir dir="dist/client/javascripts" />
+		
+		<mkdir dir="dist/server" />
+	</target>
+	
+	<target name="generate_jsdoc" depends="init_dist_dirs">
+		<java jar="client/libraries/jsdoc_toolkit2/jsrun.jar" fork="true">
+			<sysproperty key="jsdoc.dir" path="client/libraries/jsdoc_toolkit2" />
+			<arg line="client/libraries/jsdoc_toolkit2/app/run.js -a -r -t=client/libraries/jsdoc_toolkit2/templates/jsdoc -d=dist/client/docs/api client/javascripts/" />
+		</java>
+	</target>
+	
+	<target name="generate_ui_templates" depends="init_dist_dirs">
+		<mkdir dir="client/_temp"/>
+		<java classpath="client/libraries" classname="h2j.Run">
+			<arg path="client/ui_templates" />
+			<arg value="xq.ui_templates" />
+			<arg path="client/_temp" />
+		</java>
+		<concat eol="unix" fixlastline="true" destfile="client/javascripts/ui/_templates.js" append="false">
+			<fileset dir="client/_temp" />
+		</concat>
+		<delete dir="client/_temp" />
+	</target>
+	
+	<target name="merge_javascripts" depends="generate_ui_templates">
+		<property name="cmd_line_prefix" value="client/libraries/DependencyGraph.js client/javascripts/" />
+		<property name="cmd_line_postfix" value="dist/client/javascripts/" />
+		
+		<java jar="client/libraries/js.jar" fork="true"><arg line="${cmd_line_prefix} module/Minimal ${cmd_line_postfix}" /></java>
+		<java jar="client/libraries/js.jar" fork="true"><arg line="${cmd_line_prefix} module/Full ${cmd_line_postfix}" /></java>
+	</target>
+	
+	<target name="compress_javascripts" depends="merge_javascripts">
+		<java jar="client/libraries/yuicompressor.jar" fork="true" failonerror="yes">
+			<arg line="--type js --charset utf-8 --line-break 0 -o dist/client/javascripts/module/Minimal_merged_min.js dist/client/javascripts/module/Minimal_merged.js"/>
+		</java>
+		<java jar="client/libraries/yuicompressor.jar" fork="true" failonerror="yes">
+			<arg line="--type js --charset utf-8 --line-break 0 -o dist/client/javascripts/module/Full_merged_min.js dist/client/javascripts/module/Full_merged.js"/>
+		</java>
+	</target>
+</project>

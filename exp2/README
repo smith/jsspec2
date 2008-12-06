@@ -1,21 +1,40 @@
 HOW TO RUN
 ==========
 1. Browser:
- Open _browser_runner.html
+ Open specs/_browser_runner.html
 
 2. Rhino:
  Enter following command:
+ > cd specs
  > java -jar lib/js.jar _rhino_runner.js
 
 3. Windows Scripting Host:
  Enter following command:
+ > cd specs
  > cscript /E:JScript /Nologo _wscript_runner.js
 
 
 
 LICENSE
 =======
-Please see COPYING
+JSSpec is copyrighted free software by Alan Kang(jania902@gmail.com).
+You can redistribute and/or modify it under the terms of the LGPL.
+(http://www.gnu.org/licenses/lgpl.html)
+
+While JSSpec itself has no dependencies with external libraries, you
+need following libraries in order to build JSSpec from source code:
+
+yui-compressor:
+ - Homepage: http://developer.yahoo.com/yui/compressor/
+ - License: http://developer.yahoo.com/yui/license.html
+
+selenium-core
+ - Homepage: http://selenium-core.openqa.org/
+ - License: http://selenium-core.openqa.org/license.jsp
+
+jsdoc_toolkit
+ - Homepage: http://code.google.com/p/jsdoc-toolkit/
+ - License: http://www.opensource.org/licenses/mit-license.php
 
 
 
