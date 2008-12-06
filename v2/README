@@ -21,13 +21,14 @@ JSSpec is copyrighted free software by Alan Kang(jania902@gmail.com).
 You can redistribute and/or modify it under the terms of the LGPL.
 (http://www.gnu.org/licenses/lgpl.html)
 
-While JSSpec itself has no dependencies with external libraries, it depends
-on following libraries in order to build JSSpec from source code:
+Dependencies:
+ - jsdoc_toolkit
+   - Homepage: http://code.google.com/p/jsdoc-toolkit/
+   - License: http://www.opensource.org/licenses/mit-license.php
 
-jsdoc_toolkit
- - Homepage: http://code.google.com/p/jsdoc-toolkit/
- - License: http://www.opensource.org/licenses/mit-license.php
-
+ - Yahoo! UI Library (CSS)
+   - http://developer.yahoo.com/yui
+   - License: http://developer.yahoo.com/yui/license.html
 
 
 MORE INFORMATION

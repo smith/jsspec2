@@ -510,6 +510,79 @@ jsspec.Reporter = jsspec.Class.extend({
 	onExampleEnd: function(example) {throw 'Not implemented';}
 });
 
+jsspec.Reporter.getInstance = function() {
+	if(jsspec.host instanceof jsspec.BrowserHostEnvironment) {
+//		return new jsspec.HtmlReporter(jsspec.host);
+		return new jsspec.ConsoleReporter(jsspec.host);
+	} else {
+		return new jsspec.ConsoleReporter(jsspec.host);
+	}
+};
+
+
+
+jsspec.DummyReporter = jsspec.Reporter.extend({
+	init: function() {
+		this.log = [];
+	},
+	onStart: function() {
+		this.log.push({op: 'onStart'});
+	},
+	onEnd: function() {
+		this.log.push({op: 'onEnd'});
+	},
+	onExampleSetStart: function(exset) {
+		this.log.push({op: 'onExampleSetStart', exset:exset.getName()});
+	},
+	onExampleSetEnd: function(exset) {
+		this.log.push({op: 'onExampleSetEnd', exset:exset.getName()});
+	},
+	onExampleStart: function(example) {
+		this.log.push({op: 'onExampleStart', example:example.getName()});
+	},
+	onExampleEnd: function(example) {
+		this.log.push({op: 'onExampleEnd', example:example.getName()});
+	}
+});
+
+
+
+jsspec.HtmlReporter = jsspec.Reporter.extend({
+	init: function(host) {
+		this._super(host);
+		this._total = 0;
+		this._failures = 0;
+		this._errors = 0;
+		
+		document.write('<h1>JSSpec</h1>');
+	},
+	onStart: function() {
+	},
+	onEnd: function() {
+	},
+	onExampleSetStart: function(exset) {
+	},
+	onExampleSetEnd: function(exset) {
+	},
+	onExampleStart: function(example) {
+	},
+	onExampleEnd: function(example) {
+		this._total++;
+		
+		var result = example.getResult();
+		if(result.success()) return;
+		
+		this._host.log('- ' + result.getException());
+		if(result.failure()) {
+			this._failures++;
+		} else {
+			this._errors++;
+		}
+	}
+});
+
+
+
 jsspec.ConsoleReporter = jsspec.Reporter.extend({
 	init: function(host) {
 		this._super(host);
@@ -546,30 +619,6 @@ jsspec.ConsoleReporter = jsspec.Reporter.extend({
 		} else {
 			this._errors++;
 		}
-	}
-});
-
-jsspec.DummyReporter = jsspec.Reporter.extend({
-	init: function() {
-		this.log = [];
-	},
-	onStart: function() {
-		this.log.push({op: 'onStart'});
-	},
-	onEnd: function() {
-		this.log.push({op: 'onEnd'});
-	},
-	onExampleSetStart: function(exset) {
-		this.log.push({op: 'onExampleSetStart', exset:exset.getName()});
-	},
-	onExampleSetEnd: function(exset) {
-		this.log.push({op: 'onExampleSetEnd', exset:exset.getName()});
-	},
-	onExampleStart: function(example) {
-		this.log.push({op: 'onExampleStart', example:example.getName()});
-	},
-	onExampleEnd: function(example) {
-		this.log.push({op: 'onExampleEnd', example:example.getName()});
 	}
 });
 
@@ -626,7 +675,7 @@ jsspec.dsl = {
 			this._current.setTeardown(func);
 		},
 		run: function() {
-			this._reporter = new jsspec.ConsoleReporter(jsspec.host);
+			this._reporter = jsspec.Reporter.getInstance();
 			
 			this._reporter.onStart();
 			

@@ -4,6 +4,7 @@
 	<target name="all" depends="init_dist_dirs, merge_javascripts, generate_jsdoc">
 		<copy todir="dist/specs"><fileset dir="specs" /></copy>
 		<copy todir="dist" file="README"></copy>
+		<copy todir="dist/src" file="src/jsspec2.css"></copy>
 		<copy todir="dist/lib" file="lib/js.jar"></copy>
 		
 		<tar destfile="jsspec2_${DSTAMP}.tar">

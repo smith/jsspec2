@@ -1,0 +1,38 @@
+@CHARSET "UTF-8";
+@IMPORT url("base.css");
+
+body {
+}
+	
+.header {
+	padding: 0.5em;
+	border-bottom: 1px solid black;
+}
+.header h1 {
+	margin: 0;
+}
+.header h1 #spec_title {
+	font-size: xx-large;
+}
+.header p {
+	margin: 0;
+}
+.header #jsspec_link {
+	position: absolute;
+	top: 0;
+	right: 0;
+	padding: 0.5em;
+	font-size: x-small;
+}
+
+.header p .summary_item {
+	padding-right: 0.5em;
+}
+.header p #examples_counter,
+.header p #failures_counter,
+.header p #errors_counter,
+.header p #elapsed_counter,
+.header p #executed_at {
+	font-weight: bold;
+	font-size: larger;
+}
