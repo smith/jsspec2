@@ -7,7 +7,7 @@ suite('Success, failure and error')
 		this.reporter = new jsspec.DummyReporter();
 	})
 	test('Normal execution should be treated as a success', function() {
-		var example = new jsspec.Example('Ex', function() {/* do nothing */});
+		var example = new jsspec.Example('Ex', function() {});
 		example.run(this.reporter);
 		
 		assertEquals(true, example.getResult().success());

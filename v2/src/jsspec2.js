@@ -56,7 +56,7 @@ jsspec.Class.extend = function(base) {
  * @class Encapsulates differences of various host environments
  * @extends jsspec.Class
  */
-jsspec.HostEnvironment = jsspec.Class.extend(/** @lends jsspec.HostEnvironment */{
+jsspec.HostEnvironment = jsspec.Class.extend(/** @lends jsspec.HostEnvironment.prototype */{
 	/**
 	 * Prints single line message to console
 	 * 
@@ -98,7 +98,7 @@ jsspec.HostEnvironment.getInstance = function() {
  * @class Browser host environment
  * @extends jsspec.HostEnvironment
  */
-jsspec.BrowserHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.HostEnvironment */{
+jsspec.BrowserHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.BrowserHostEnvironment.prototype */{
 	log: function(message) {
 		jsspec.root.document.title = message;
 		
@@ -130,7 +130,7 @@ jsspec.BrowserHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.
  * @class Rhino host environment
  * @extends jsspec.HostEnvironment
  */
-jsspec.RhinoHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.HostEnvironment */{
+jsspec.RhinoHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.RhinoHostEnvironment.prototype */{
 	log: function(message) {
 		jsspec.root.print(message);
 	},
@@ -152,7 +152,7 @@ jsspec.RhinoHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.Ho
  * @class Windows Script host environment
  * @extends jsspec.HostEnvironment
  */
-jsspec.WScriptHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.HostEnvironment */{
+jsspec.WScriptHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.WScriptHostEnvironment.prototype */{
 	log: function(message) {
 		jsspec.root.WScript.Echo(message);
 	},
@@ -183,8 +183,78 @@ jsspec.WScriptHostEnvironment = jsspec.HostEnvironment.extend(/** @lends jsspec.
 });
 
 
-//----
-jsspec.ExpectationFailure = jsspec.Class.extend({
+
+/**
+ * @class Collection of assertion APIs
+ */
+jsspec.Assertion = {
+	/**
+	 * Makes an example fail unconditionally
+	 * 
+	 * @param {string} [description] Optional description
+	 */
+	fail: function(description) {
+		throw new jsspec.ExpectationFailure(description || 'Failed');
+	},
+	
+	/**
+	 * Performs equality test
+	 * 
+	 * @param {object} expected Expected value
+	 * @param {object} actual Actual value
+	 * @param {string} [description] Optional description
+	 */
+	assertEquals: function(expected, actual, description) {
+		var matcher = jsspec.Matcher.getInstance(expected, actual);
+		if(!matcher.matches()) throw new jsspec.ExpectationFailure((description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']');
+	},
+	
+	/**
+	 * Performs type test
+	 * 
+	 * @param {string} expected Expected type
+	 * @param {object} actual Actual object
+	 * @param {string} [description] Optional description
+	 */
+	assertType: function(expected, actual, description) {
+		var type = jsspec.util.getType(actual);
+		if(expected !== type) throw new jsspec.ExpectationFailure((description || 'Type expectation failure') + '. Expected [' + expected + '] but [' + type + ']');
+	},
+	
+	/**
+	 * Checks if given value is true
+	 * 
+	 * @param {boolean} actual Actual object
+	 * @param {string} [description] Optional description
+	 */
+	assertTrue: function(actual, description) {
+		var expected = true;
+		if(expected !== actual) throw new jsspec.ExpectationFailure((description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']');
+	},
+	
+	/**
+	 * Checks if given value is false
+	 * 
+	 * @param {boolean} actual Actual object
+	 * @param {string} [description] Optional description
+	 */
+	assertFalse: function(actual, description) {
+		var expected = false;
+		if(expected !== actual) throw new jsspec.ExpectationFailure((description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']');
+	}
+};
+
+
+
+/**
+ * @class Exception class to represent expectation failure (instead of error)
+ * @extends jsspec.Class
+ */
+jsspec.ExpectationFailure = jsspec.Class.extend(/** @lends jsspec.ExpectationFailure.prototype */{
+	/**
+	 * @constructs
+	 * @param {string} message An failure message
+	 */
 	init: function(message) {
 		this._message = message;
 	},
@@ -195,39 +265,44 @@ jsspec.ExpectationFailure = jsspec.Class.extend({
 
 
 
-jsspec.Assertion = {
-	fail: function(description) {
-		throw new jsspec.ExpectationFailure(description || 'Failed');
-	},
-	assertEquals: function(expected, actual, description) {
-		var matcher = jsspec.Matcher.getInstance(expected, actual);
-		if(!matcher.matches()) throw new jsspec.ExpectationFailure((description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']');
-	},
-	assertType: function(expected, actual, description) {
-		var type = jsspec.util.getType(actual);
-		if(expected !== type) throw new jsspec.ExpectationFailure((description || 'Type expectation failure') + '. Expected [' + expected + '] but [' + type + ']');
-	},
-	assertTrue: function(actual, description) {
-		var expected = true;
-		if(expected !== actual) throw new jsspec.ExpectationFailure((description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']');
-	},
-	assertFalse: function(actual, description) {
-		var expected = false;
-		if(expected !== actual) throw new jsspec.ExpectationFailure((description || 'Expectation failure') + '. Expected [' + expected + '] but [' + actual + ']');
-	}
-};
-
-
-
-jsspec.Matcher = jsspec.Class.extend({
+/**
+ * @class Performs equality check for given objects
+ * @extends jsspec.Class
+ */
+jsspec.Matcher = jsspec.Class.extend(/** @lends jsspec.Matcher.prototype */{
+	/**
+	 * @constructs
+	 * @param {object} expected An expected object
+	 * @param {object} actual An actual object
+	 */
 	init: function(expected, actual) {
 		this._expected = expected;
 		this._actual = actual;
 	},
+	
+	/**
+	 * @returns {object} An expected object
+	 */
 	getExpected: function() {return this._expected;},
+	
+	/**
+	 * @returns {object} An actual object
+	 */
 	getActual: function() {return this._actual;},
+	
+	/**
+	 * @param {boolean} True if matches
+	 */
 	matches: function() {return this.getExpected() === this.getActual();}
 });
+
+/**
+ * Returns appropriate jsspec.Matcher instance for given parameters' type
+ * 
+ * @param {object} expected An expected object
+ * @param {object} actual An actual object
+ * @returns {jsspec.Matcher} An instance of jsspec.Matcher
+ */
 jsspec.Matcher.getInstance = function(expected, actual) {
 	if(expected === null || expected === undefined) return new jsspec.Matcher(expected, actual);
 	
@@ -251,7 +326,11 @@ jsspec.Matcher.getInstance = function(expected, actual) {
 
 
 
-jsspec.ArrayMatcher = jsspec.Matcher.extend({
+/**
+ * @class Performs equality check for two arrays
+ * @extends jsspec.Matcher
+ */
+jsspec.ArrayMatcher = jsspec.Matcher.extend(/** @lends jsspec.ArrayMatcher.prototype */{
 	matches: function() {
 		if(!this.getActual()) return false;
 		if(this.getExpected().length !== this.getActual().length) return false;
@@ -268,7 +347,11 @@ jsspec.ArrayMatcher = jsspec.Matcher.extend({
 
 
 
-jsspec.DateMatcher = jsspec.Matcher.extend({
+/**
+ * @class Performs equality check for two date instances
+ * @extends jsspec.Matcher
+ */
+jsspec.DateMatcher = jsspec.Matcher.extend(/** @lends jsspec.DateMatcher.prototype */{
 	matches: function() {
 		if(!this.getActual()) return false;
 		return this.getExpected().getTime() === this.getActual().getTime();
@@ -277,7 +360,11 @@ jsspec.DateMatcher = jsspec.Matcher.extend({
 
 
 
-jsspec.RegexpMatcher = jsspec.Matcher.extend({
+/**
+ * @class Performs equality check for two regular expressions
+ * @extends jsspec.Matcher
+ */
+jsspec.RegexpMatcher = jsspec.Matcher.extend(/** @lends jsspec.RegexpMatcher.prototype */{
 	matches: function() {
 		if(!this.getActual()) return false;
 		return this.getExpected().source === this.getActual().source;
@@ -286,7 +373,11 @@ jsspec.RegexpMatcher = jsspec.Matcher.extend({
 
 
 
-jsspec.ObjectMatcher = jsspec.Matcher.extend({
+/**
+ * @class Performs equality check for two objects
+ * @extends jsspec.Matcher
+ */
+jsspec.ObjectMatcher = jsspec.Matcher.extend(/** @lends jsspec.ObjectMatcher.prototype */{
 	matches: function() {
 		if(!this.getActual()) return false;
 
@@ -513,13 +604,25 @@ jsspec.dsl = {
 			return this;
 		},
 		test: function(name, func) {
+			if(!this._current) {
+				this.suite('Default example set');
+			}
+			
 			this._current.addExample(new jsspec.Example(name, func));
 			return this;
 		},
 		setup: function(func) {
+			if(!this._current) {
+				this.suite('Default example set');
+			}
+
 			this._current.setSetup(func);
 		},
 		teardown: function(func) {
+			if(!this._current) {
+				this.suite('Default example set');
+			}
+			
 			this._current.setTeardown(func);
 		},
 		run: function() {
@@ -546,7 +649,6 @@ jsspec.dsl = {
 
 
 
-//----
 jsspec.root = this;
 jsspec._EMPTY_FUNCTION = function() {}
 jsspec.host = jsspec.HostEnvironment.getInstance();
