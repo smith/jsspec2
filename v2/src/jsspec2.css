@@ -11,7 +11,7 @@ body {
 .header h1 {
 	margin: 0;
 }
-.header h1 #spec_title {
+.header h1 #suite_title {
 	font-size: xx-large;
 }
 .header p {
@@ -31,8 +31,21 @@ body {
 .header p #examples_counter,
 .header p #failures_counter,
 .header p #errors_counter,
-.header p #elapsed_counter,
-.header p #executed_at {
+.header p #elapsed_counter
+ {
 	font-weight: bold;
 	font-size: larger;
+}
+
+
+
+.exampleSets {
+	padding: 0.5em;
+}
+.exampleSets h2 {
+	margin: 0;
+}
+
+.exampleSet h3 {
+	margin: 0;
 }
