@@ -1,9 +1,11 @@
+// Selenium Localizer
 (function() {
 	var verbDic = {
 		'열기': 'open',
-		'클릭': 'click'
+		'클릭': 'click',
+		'입력': 'type'
 	};
-		
+	
 	var nounDic = {
 		'제목': 'Title',
 		'활성상태': 'Editable',
@@ -19,7 +21,7 @@
 		'엘리먼트있음': 'ElementPresent',
 		'엘리먼트없음': 'ElementNotPresent'
 	};
-
+	
 	var pAssert = /^(.+?)( 불일치| 아님)? (확인|검사)$/;
 	var pAndWait = /^(.+?) 후 대기$/;
 	
