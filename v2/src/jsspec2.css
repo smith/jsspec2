@@ -49,3 +49,13 @@ body {
 .exampleSet h3 {
 	margin: 0;
 }
+
+.success {
+	color: #FFFFFF;
+	background-color: #65C400;
+}
+
+.failure {
+	color: #FFFFFF;
+	background-color: #C20000;
+}
