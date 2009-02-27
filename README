@@ -3,33 +3,21 @@ HOW TO RUN
 1. Browser (works on IE5.5/6/7/8, FF2/3, Chrome, Safari3, Opera9):
  Open specs/_browser_runner.html
 
-2. Rhino:
+2. Rhino or SpiderMonkey:
  Enter following command:
  > cd specs
- > java -jar lib/js.jar _rhino_runner.js
+ > js _rhino_runner.js
 
 3. Windows Scripting Host:
  Enter following command:
  > cd specs
- > cscript /E:JScript /Nologo _wscript_runner.js
-
-
+ > cscript _wscript_runner.js
 
 LICENSE
 =======
 JSSpec is copyrighted free software by Alan Kang(jania902@gmail.com).
 You can redistribute and/or modify it under the terms of the LGPL.
 (http://www.gnu.org/licenses/lgpl.html)
-
-Dependencies:
- - jsdoc_toolkit
-   - Homepage: http://code.google.com/p/jsdoc-toolkit/
-   - License: http://www.opensource.org/licenses/mit-license.php
-
- - Yahoo! UI Library (CSS)
-   - http://developer.yahoo.com/yui
-   - License: http://developer.yahoo.com/yui/license.html
-
 
 MORE INFORMATION
 ================
