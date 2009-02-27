@@ -1,0 +1,5 @@
+<job>
+    <script src="../src/jsspec2.js" language="javascript"></script>
+    <script src="spec.js" language="javascript"></script>
+</job>
+
